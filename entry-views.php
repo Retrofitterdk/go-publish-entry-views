@@ -3,7 +3,7 @@
  * Plugin Name: Entry Views
  * Plugin URI:  http://themehybrid.com/plugins/entry-views
  * Description: A WordPress plugin for tracking the number of post views.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      Justin Tadlock
  * Author URI:  http://justintadlock.com
  * Text Domain: entry-views
@@ -88,7 +88,7 @@ final class Entry_Views_Plugin {
 	 * @return void
 	 */
 	function i18n() {
-		load_plugin_textdomain( 'entry-views', false, 'entry-views/languages' );
+		load_plugin_textdomain( 'entry-views', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 	}
 
 	/**
@@ -123,10 +123,8 @@ final class Entry_Views_Plugin {
 		add_post_type_support( 'attachment', array( 'entry-views' ) );
 
 		/* Plugin post types. */
-		add_post_type_support( 'literature',      array( 'entry-views' ) );
-		add_post_type_support( 'portfolio_item',  array( 'entry-views' ) );
-		add_post_type_support( 'recipe',          array( 'entry-views' ) );
-		add_post_type_support( 'restaurant_item', array( 'entry-views' ) );
+		add_post_type_support( 'dagens_advertorials', array( 'entry-views' ) );
+		add_post_type_support( 'prakmed_article', array( 'entry-views' ) );
 	}
 
 	/**
