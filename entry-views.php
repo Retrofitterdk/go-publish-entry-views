@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name: Entry Views
+ * Plugin Name: Go:Publish Entry Views
  * Plugin URI:  http://themehybrid.com/plugins/entry-views
  * Description: A WordPress plugin for tracking the number of post views.
  * Version:     1.0.1
- * Author:      Justin Tadlock
+ * Author:      Justin Tadlock, Retrofitterdk
  * Author URI:  http://justintadlock.com
- * Text Domain: entry-views
+ * Text Domain: go-publish-entry-views
  * Domain Path: /languages
  *
  * Entry views is a script for calculating the number of views a post gets.  It is meant to be basic and 
@@ -71,13 +71,17 @@ final class Entry_Views_Plugin {
 	 */
 	public function __construct() {
 
-		add_action( 'plugins_loaded',             array( $this, 'i18n'              ), 2  );
-		add_action( 'plugins_loaded',             array( $this, 'includes'          ), 3  );
-		add_action( 'init',                       array( $this, 'post_type_support' ), 10 );
-		add_action( 'widgets_init',               array( $this, 'register_widgets'  ), 10 );
-		add_action( 'template_redirect',          array( $this, 'load'              ), 99 );
-		add_action( 'wp_ajax_entry_views',        array( $this, 'update_ajax'       ), 10 );
-		add_action( 'wp_ajax_nopriv_entry_views', array( $this, 'update_ajax'       ), 10 );
+		add_action( 'plugins_loaded',              array( $this, 'i18n'              ), 2  );
+		add_action( 'plugins_loaded',              array( $this, 'includes'          ), 3  );
+		add_action( 'init',                        array( $this, 'post_type_support' ), 10 );
+		add_action( 'widgets_init',                array( $this, 'register_widgets'  ), 10 );
+		add_action( 'template_redirect',           array( $this, 'load'              ), 99 );
+		add_action( 'wp_ajax_entry_views',         array( $this, 'update_ajax'       ), 10 );
+		add_action( 'wp_ajax_nopriv_entry_views',  array( $this, 'update_ajax'       ), 10 );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_assets'     ), 10 );
+		add_filter( 'pre_render_block',            array( $this, 'pre_render_block'  ), 10, 2 );
+
+
 	}
 
 	/**
@@ -88,7 +92,7 @@ final class Entry_Views_Plugin {
 	 * @return void
 	 */
 	function i18n() {
-		load_plugin_textdomain( 'entry-views', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+		load_plugin_textdomain( 'go-publish-entry-views', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 	}
 
 	/**
@@ -207,6 +211,47 @@ final class Entry_Views_Plugin {
 
 		/* Display the JavaScript needed. */
 		echo '<script type="text/javascript">/* <![CDATA[ */ jQuery(document).ready( function() { jQuery.post( "' . admin_url( 'admin-ajax.php' ) . '", { action : "entry_views", _ajax_nonce : "' . $nonce . '", post_id : ' . absint( $this->post_id ) . ' } ); } ); /* ]]> */</script>' . "\n";
+	}
+
+	function editor_assets() {
+		wp_enqueue_script(
+			'entry-views-block-variations',
+			plugins_url( 'go-publish-entry-views/assets/js/block-variations.js' ),
+			array( 
+				'wp-blocks', 
+				'wp-dom-ready',
+				'wp-i18n'
+			),
+			filemtime( plugin_dir_path( __FILE__ ) . 'go-publish-entry-views/assets/js/block-variations.js' ),
+			true
+		);
+	}
+
+	function pre_render_block( $pre_render, $parsed_block ) {
+
+		// Determine if this is the custom block variation.
+		if (isset($parsed_block['attrs']['namespace'])) {
+			if ( 'popular-posts' === $parsed_block['attrs']['namespace'] ) {
+				add_filter(
+					'query_loop_block_query_vars',
+					function( $query, $block ) use ( $parsed_block ) {
+							$query['fields'] = 'ids';
+							$query['meta_key'] = ev_get_meta_key();
+							$query['orderby'] = 'meta_value_num';
+							$query['date_query'] = array(
+								'year' => date( 'Y' ),
+								'week' => date( 'W' ),
+								);
+		
+						return $query;
+					},
+					10,
+					2
+				);
+			}
+		}
+	
+		return $pre_render;
 	}
 
 	/**
